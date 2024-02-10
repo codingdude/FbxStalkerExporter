@@ -1,9 +1,12 @@
 #include <fbxsdk.h>
 
+#include "xray_re/xr_entity.h"
 #include "xray_re/xr_file_system.h"
 #include "xray_re/xr_level.h"
+#include "xray_re/xr_level_spawn.h"
 #include "xray_re/xr_level_visuals.h"
 #include "xray_re/xr_ogf.h"
+#include "xray_re/xr_ogf_v4.h"
 
 void FbxStalkerExportMesh(
 	const xray_re::xr_ogf* Ogf,
@@ -14,8 +17,8 @@ void FbxStalkerExportMesh(
 
 	const int ChannelId = 0;
 	const int VertsPerFace = 3;
-	const int NumVerts = VertexBuffer.size();
-	const int NumFaces = IndexBuffer.size() / VertsPerFace;
+	const int NumVerts = static_cast<int>(VertexBuffer.size());
+	const int NumFaces = static_cast<int>(IndexBuffer.size()) / VertsPerFace;
 	const int NumChannels = 1;
 
 	const auto* Vert = VertexBuffer.p();
@@ -72,8 +75,7 @@ void FbxStalkerExportMesh(
 
 void FbxStalkerExportLevelVisuals(
 	const xray_re::xr_level_visuals* LevelVisuals,
-	FbxScene* Scene,
-	FbxManager* SdkManager)
+	FbxScene* Scene)
 {
 	char Name[128];
 
@@ -81,15 +83,6 @@ void FbxStalkerExportLevelVisuals(
 	for (std::size_t OgfId = 0; OgfId < Ogfs.size(); ++OgfId)
 	{
 		const auto* Ogf = Ogfs[OgfId];
-		const auto ModelType = Ogf->model_type();
-
-		// FIXME: A hack that filters some kind of models to avoid geometry mess.
-		//        In normal case trees and vehicles should not be filtered. 
-		if (ModelType != xray_re::ogf_model_type::MT3_NORMAL &&
-			ModelType != xray_re::ogf_model_type::MT3_PROGRESSIVE)
-		{
-			continue;
-		}
 
 		std::snprintf(Name, static_cast<int>(sizeof(Name)), "level_visual_%zu", OgfId);
 
@@ -97,6 +90,21 @@ void FbxStalkerExportLevelVisuals(
 		FbxMesh* Mesh = FbxMesh::Create(Scene, Name);
 		FbxStalkerExportMesh(Ogf, Mesh);
 		Node->AddNodeAttribute(Mesh);
+
+		if (const auto* OgfV4 = dynamic_cast<const xray_re::xr_ogf_v4*>(Ogf))
+		{
+			if (!OgfV4->xform().is_identity())
+			{
+				float Rx, Ry, Rz;
+				float RadDoDeg = 180.0 / M_PI;
+
+				const auto& Xform = OgfV4->xform();
+				Xform.get_euler_xyz(Rx, Ry, Rz);
+				Node->LclRotation.Set(FbxVector4(Rx * RadDoDeg, Ry * RadDoDeg, Rz * RadDoDeg));
+				Node->LclTranslation.Set(FbxVector4(Xform._41, Xform._42, Xform._43));
+			}
+		}
+
 		Scene->GetRootNode()->AddChild(Node);
 	}
 }
@@ -131,7 +139,7 @@ void FbxStalkerExportScene(
 		return;
 	}
 
-	FbxStalkerExportLevelVisuals(level.visuals(), Scene, SdkManager);
+	FbxStalkerExportLevelVisuals(level.visuals(), Scene);
 
 	std::snprintf(FileName, sizeof(FileName), "%s\\%s.fbx", TargetPath, LevelName);
 

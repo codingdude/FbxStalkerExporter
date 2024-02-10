@@ -104,7 +104,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(FbxSdkDir)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(FbxSdkDir)\include;$(SolutionDir)\xray_re</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -121,7 +121,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(FbxSdkDir)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(FbxSdkDir)\include;$(SolutionDir)\xray_re</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -261,7 +261,7 @@
     <ClInclude Include="xray_re\xr_writer.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp" />
+    <ClCompile Include="FbxStalkerExporter.cpp" />
     <ClCompile Include="xray_re\xr_ai_cross_table.cxx" />
     <ClCompile Include="xray_re\xr_ai_graph.cxx" />
     <ClCompile Include="xray_re\xr_ai_way.cxx" />

@@ -139,8 +139,9 @@ template<> xr_image* load(const char* path, const char* name, bool required)
 	if (fs.file_exist(path, name)) {
 		msg("loading %s", name);
 		xr_image* image = new xr_image;
-		if (!image->load_dds(path, name))
-			xr_not_expected();
+		// FIXME: dds texture loading doesn't work since we don't use nvtt
+		//if (!image->load_dds(path, name))
+		//	xr_not_expected();
 		return image;
 	}
 	return 0;
@@ -222,8 +223,7 @@ void xr_level::load(uint32_t xrlc_version, const char* game_data_path, const cha
 		m_env_mod = ::load<xr_level_env_mod>(level_path, "level.env_mod");
 
 		m_fog_vol = ::load<xr_level_fog_vol>(level_path, "level.fog_vol");
-
-	if (xrlc_version >= XRLC_VERSION_13) {
+	} if (xrlc_version >= XRLC_VERSION_13) {
 		m_ai = ::load<xr_level_ai>(level_path, "level.ai");
 		m_game = ::load<xr_level_game>(level_path, "level.game");
 		m_spawn = ::load<xr_level_spawn>(level_path, "level.spawn");
@@ -249,7 +249,7 @@ void xr_level::load(uint32_t xrlc_version, const char* game_data_path, const cha
 	m_lods = ::load<xr_image>(level_path, "level_lods.dds");
 	m_lods_nm = ::load<xr_image>(level_path, "level_lods_nm.dds");
 
-if (m_spawn && xrlc_version == XRLC_VERSION_12) {
+	if (m_spawn && xrlc_version == XRLC_VERSION_12) {
 		for (xr_entity_vec_cit it = m_spawn->spawns().begin(),
 				end = m_spawn->spawns().end(); it != end; ++it) {
 			const cse_abstract* entity = *it;
@@ -283,11 +283,12 @@ if (m_spawn && xrlc_version == XRLC_VERSION_12) {
 	if (xrlc_version == XRLC_VERSION_12)
 		m_gamemtls_lib = ::load<xr_gamemtls_lib>(game_data_path, "gamemtl.xr", true);
 
-	if (xrlc_version >= XRLC_VERSION_13)
-		m_gamemtls_lib = ::load<xr_gamemtls_lib>(game_data_path, "gamemtl.xr", true);
+
+	// FIXME: not works for some reason
+	//if (xrlc_version >= XRLC_VERSION_13)
+	//	m_gamemtls_lib = ::load<xr_gamemtls_lib>(game_data_path, "gamemtl.xr", true);
 
 	m_xrlc_version = xrlc_version;
-}
 }
 
 void xr_level::clear_ltx() { delete m_ltx; m_ltx = 0; }

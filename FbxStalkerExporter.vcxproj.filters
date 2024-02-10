@@ -701,6 +701,6 @@
     <ClCompile Include="xray_re\xr_writer.cxx">
       <Filter>xray_re</Filter>
     </ClCompile>
-    <ClCompile Include="main.cpp" />
+    <ClCompile Include="FbxStalkerExporter.cpp" />
   </ItemGroup>
 </Project>

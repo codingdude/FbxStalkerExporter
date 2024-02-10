@@ -32,7 +32,10 @@ inline xr_ogf_v4::motion_io::motion_io() { m_fps = OGF4_MOTION_FPS; }
 xr_ogf_v4::xr_ogf_v4(): xr_ogf(OGF4_VERSION), m_fast(0),
 	m_ext_vb_index(0), m_ext_vb_offset(0), m_ext_vb_size(0),
 	m_ext_ib_index(0), m_ext_ib_offset(0), m_ext_ib_size(0),
-	m_ext_swib_index(0) {}
+	m_ext_swib_index(0)
+{
+	m_tree_xform = m_tree_xform.identity();
+}
 
 xr_ogf_v4::~xr_ogf_v4()
 {
