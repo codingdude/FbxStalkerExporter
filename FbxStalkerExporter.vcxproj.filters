@@ -1,0 +1,706 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="xray_re">
+      <UniqueIdentifier>{8f56ec47-4039-4ba9-8c51-0bfbebc6140a}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="xray_re\xr_aabb.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_ai_cross_table.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_ai_graph.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_ai_map.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_ai_version.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_ai_way.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_blender.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_bone.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_build_err.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_build_lights.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_cform.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_cl_parser.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_clsid.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_color.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_cylinder.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_d3d_light.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_details.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_dm.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_entity.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_entity_factory.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_entity_script.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_entity_zenobian.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_envelope.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_file_system.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_file_system_posix.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_file_system_win32.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_fixed_vector.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_game_graph.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_game_spawn.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_gamemtls_lib.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_geom_buf.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_guid.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_image.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_influence.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_ini_file.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_level.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_level_ai.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_level_cform.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_level_details.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_level_dm.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_level_env_mod.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_level_fog_vol.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_level_game.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_level_gct.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_level_geom.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_level_glows.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_level_graph.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_level_hom.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_level_lights.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_level_ltx.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_level_portals.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_level_ps_static.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_level_sectors.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_level_shaders.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_level_snd_env.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_level_snd_static.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_level_som.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_level_spawn.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_level_version.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_level_visuals.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_level_wallmarks.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_limits.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_log.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_lzhuf.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_math.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_matrix.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_mesh.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_mesh_builder.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_mesh_utils.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_mesh_vbuf.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_motion.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_name_gen.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_obb.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_obj_motion.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_object.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_object_format.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_ogf.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_ogf_format.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_ogf_v3.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_ogf_v4.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_packet.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_plane.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_quaternion.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_reader.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_rect.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_remapper.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_scene.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_scene_ai_map.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_scene_common.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_scene_details.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_scene_glows.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_scene_groups.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_scene_lights.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_scene_objects.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_scene_part.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_scene_particles.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_scene_portals.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_scene_revision.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_scene_sectors.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_scene_shapes.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_scene_sound_envs.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_scene_sound_srcs.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_scene_spawns.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_scene_visuals.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_scene_wallmarks.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_scene_ways.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_scrambler.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_shaders_lib.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_shaders_xrlc_lib.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_shape.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_skeleton.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_skl_motion.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_sound_thumbnail.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_sphere.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_string_utils.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_surface.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_surface_factory.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_texture_thumbnail.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_thumbnail.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_types.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_utils.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_vector2.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_vector3.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_vector4.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_wallmarks.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+    <ClInclude Include="xray_re\xr_writer.h">
+      <Filter>xray_re</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="xray_re\xr_ai_cross_table.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_ai_graph.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_ai_way.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_blender.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_bone.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_build_err.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_build_lights.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_cform.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_cl_parser.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_clsid.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_d3d_light.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_details.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_dm.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_entity.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_entity_factory.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_entity_script.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_entity_zenobian.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_envelope.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_envelope_eval.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_file_system.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_file_system_posix.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_file_system_win32.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_game_graph.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_game_spawn.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_gamemtls_lib.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_geom_buf.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_guid.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_image.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_image_bmp.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_image_dds.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_image_tga.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_influence.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_ini_file.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_level.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_level_ai.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_level_cform.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_level_details.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_level_dm.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_level_env_mod.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_level_fog_vol.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_level_game.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_level_gct.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_level_gct_v9.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_level_geom.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_level_glows.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_level_graph.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_level_hom.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_level_lights.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_level_ltx.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_level_portals.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_level_ps_static.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_level_sectors.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_level_shaders.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_level_snd_env.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_level_snd_static.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_level_som.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_level_spawn.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_level_visuals.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_level_wallmarks.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_log.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_lzhuf.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_matrix.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_mesh.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_mesh_builder.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_mesh_vbuf.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_motion.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_name_gen.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_obj_motion.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_object.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_ogf.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_ogf_v3.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_ogf_v4.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_packet.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_quaternion.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_reader.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_reader_scrambler.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_scene.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_scene_ai_map.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_scene_details.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_scene_glows.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_scene_groups.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_scene_lights.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_scene_objects.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_scene_part.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_scene_particles.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_scene_portals.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_scene_revision.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_scene_sectors.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_scene_shapes.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_scene_sound_envs.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_scene_sound_srcs.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_scene_spawns.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_scene_visuals.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_scene_wallmarks.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_scene_ways.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_scrambler.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_shaders_lib.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_shaders_xrlc_lib.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_skeleton.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_skl_motion.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_sound_thumbnail.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_surface.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_texture_thumbnail.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_vector3.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="xray_re\xr_writer.cxx">
+      <Filter>xray_re</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp" />
+  </ItemGroup>
+</Project>
