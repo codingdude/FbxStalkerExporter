@@ -1,14 +1,12 @@
 #include <fbxsdk.h>
 
-#include "xray_re/xr_entity.h"
 #include "xray_re/xr_file_system.h"
 #include "xray_re/xr_level.h"
-#include "xray_re/xr_level_spawn.h"
 #include "xray_re/xr_level_visuals.h"
 #include "xray_re/xr_ogf.h"
 #include "xray_re/xr_ogf_v4.h"
 
-void FbxStalkerExportMesh(
+bool FbxStalkerExportStaticMesh(
 	const xray_re::xr_ogf* Ogf,
 	FbxMesh* Mesh)
 {
@@ -24,6 +22,11 @@ void FbxStalkerExportMesh(
 	const auto* Vert = VertexBuffer.p();
 	const auto* Norm = VertexBuffer.n();
 	const auto* UV = VertexBuffer.tc();
+
+	if (!Vert || !Norm || !UV || !NumFaces)
+	{
+		return false;
+	}
 
 	Mesh->InitControlPoints(NumVerts);
 	Mesh->InitNormals(NumVerts);
@@ -54,7 +57,7 @@ void FbxStalkerExportMesh(
 		UVDiffuseElement->GetDirectArray().Add(
 			FbxVector2(
 				UV[VertId].u,
-				1 - UV[VertId].v
+				UV[VertId].v
 			)
 		);
 	}
@@ -71,6 +74,8 @@ void FbxStalkerExportMesh(
 		}
 		Mesh->EndPolygon();
 	}
+
+	return true;
 }
 
 void FbxStalkerExportLevelVisuals(
@@ -88,19 +93,26 @@ void FbxStalkerExportLevelVisuals(
 
 		FbxNode* Node = FbxNode::Create(Scene, Name);
 		FbxMesh* Mesh = FbxMesh::Create(Scene, Name);
-		FbxStalkerExportMesh(Ogf, Mesh);
+		if (!FbxStalkerExportStaticMesh(Ogf, Mesh))
+		{
+			FBXSDK_printf("Can't export static mesh '%s'.\n", Name);
+			Mesh->Destroy();
+			continue;
+		}
+
 		Node->AddNodeAttribute(Mesh);
 
 		if (const auto* OgfV4 = dynamic_cast<const xray_re::xr_ogf_v4*>(Ogf))
 		{
-			if (!OgfV4->xform().is_identity())
+			const auto& Xform = OgfV4->xform();
+			if (!Xform.is_identity())
 			{
 				float Rx, Ry, Rz;
-				float RadDoDeg = 180.0 / M_PI;
 
-				const auto& Xform = OgfV4->xform();
+				const float RadToDeg = static_cast<float>(180.0 / M_PI);
+
 				Xform.get_euler_xyz(Rx, Ry, Rz);
-				Node->LclRotation.Set(FbxVector4(Rx * RadDoDeg, Ry * RadDoDeg, Rz * RadDoDeg));
+				Node->LclRotation.Set(FbxVector4(Rx * RadToDeg, Ry * RadToDeg, Rz * RadToDeg));
 				Node->LclTranslation.Set(FbxVector4(Xform._41, Xform._42, Xform._43));
 			}
 		}
@@ -139,6 +151,17 @@ void FbxStalkerExportScene(
 		return;
 	}
 
+	// Switch to the x-ray coordinate system which is left handed,
+	// the y axis points upward and the z axis towards to the look direction
+
+	Scene->GetGlobalSettings().SetAxisSystem(
+		FbxAxisSystem(
+			FbxAxisSystem::EUpVector::eYAxis,
+			FbxAxisSystem::EFrontVector::eParityOdd,
+			FbxAxisSystem::ECoordSystem::eLeftHanded
+		)
+	);
+
 	FbxStalkerExportLevelVisuals(level.visuals(), Scene);
 
 	std::snprintf(FileName, sizeof(FileName), "%s\\%s.fbx", TargetPath, LevelName);
@@ -151,6 +174,14 @@ void FbxStalkerExportScene(
 		FBXSDK_printf("Error returned: %s\n\n", Exporter->GetStatus().GetErrorString());
 		return;
 	}
+
+	// Convert the entire scene back to the fbx coordinate system
+
+	FbxAxisSystem(
+		FbxAxisSystem::EUpVector::eYAxis,
+		FbxAxisSystem::EFrontVector::eParityOdd,
+		FbxAxisSystem::ECoordSystem::eRightHanded
+	).DeepConvertScene(Scene);
 
 	Exporter->Export(Scene);
 	Exporter->Destroy();
