@@ -242,6 +242,10 @@ void FbxStalkerExportScene(
 		)
 	);
 
+	// Convert scene system unit size since x-ray unit equal to one meter
+
+	FbxSystemUnit::m.ConvertScene(Scene);
+
 	FbxStalkerExportLevelMaterials(Filesystem, Level.shaders(), Scene);
 	FbxStalkerExportLevelVisuals(Level.visuals(), Level.shaders(), Scene);
 
@@ -280,7 +284,7 @@ int main()
 
 	FbxStalkerExportScene(
 		SdkManager,
-		"l01_escape", "D:\\projects\\stalker\\fsgame.ltx",
+		"l11_pripyat", "D:\\projects\\stalker\\fsgame.ltx",
 		"D:\\Projects\\fbxgame");
 
 	SdkManager->Destroy();
