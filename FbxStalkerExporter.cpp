@@ -2,9 +2,25 @@
 
 #include "xray_re/xr_file_system.h"
 #include "xray_re/xr_level.h"
+#include "xray_re/xr_level_shaders.h"
 #include "xray_re/xr_level_visuals.h"
 #include "xray_re/xr_ogf.h"
 #include "xray_re/xr_ogf_v4.h"
+
+namespace {
+
+inline FbxString FbxStalkerGetBaseFilename(const char* Path)
+{
+	const FbxString FilePath = Path;
+	const int Pos = FilePath.Find('\\');
+
+	if (Pos != -1)
+	{
+		return FilePath.Mid(Pos + 1);
+	}
+
+	return FilePath;
+}
 
 bool FbxStalkerExportStaticMesh(
 	const xray_re::xr_ogf* Ogf,
@@ -29,17 +45,18 @@ bool FbxStalkerExportStaticMesh(
 	}
 
 	Mesh->InitControlPoints(NumVerts);
-	Mesh->InitNormals(NumVerts);
+
+	FbxGeometryElementNormal* GeometryElementNormal = Mesh->CreateElementNormal();
+	GeometryElementNormal->SetMappingMode(FbxGeometryElement::eByControlPoint);
+
+	FbxLayerElementUV* LayerElementDiffuseUV = FbxLayerElementUV::Create(Mesh, "");
+	LayerElementDiffuseUV->SetMappingMode(FbxLayerElement::eByControlPoint);
+
+	FbxLayerElementMaterial* LayerElementMaterial = FbxLayerElementMaterial::Create(Mesh, "");
+	LayerElementMaterial->SetMappingMode(FbxLayerElement::eByPolygon);
+	LayerElementMaterial->SetReferenceMode(FbxLayerElement::eIndexToDirect);
 
 	FbxVector4* ControlPoints = Mesh->GetControlPoints();
-
-	FbxGeometryElementNormal* ElementNormal = Mesh->CreateElementNormal();
-	ElementNormal->SetMappingMode(FbxGeometryElement::eByControlPoint);
-
-	FbxGeometryElementUV* UVDiffuseElement = Mesh->CreateElementUV("DiffuseUV");
-	UVDiffuseElement->SetMappingMode(FbxGeometryElement::eByPolygonVertex);
-	UVDiffuseElement->SetReferenceMode(FbxGeometryElement::eIndexToDirect);
-
 	for (int VertId = 0; VertId < NumVerts; ++VertId)
 	{
 		ControlPoints[VertId].Set(
@@ -47,14 +64,14 @@ bool FbxStalkerExportStaticMesh(
 			Vert[VertId].y,
 			Vert[VertId].z
 		);
-		ElementNormal->GetDirectArray().Add(
+		GeometryElementNormal->GetDirectArray().Add(
 			FbxVector4(
 				Norm[VertId].x,
 				Norm[VertId].y,
 				Norm[VertId].z
 			)
 		);
-		UVDiffuseElement->GetDirectArray().Add(
+		LayerElementDiffuseUV->GetDirectArray().Add(
 			FbxVector2(
 				UV[VertId].u,
 				UV[VertId].v
@@ -62,15 +79,22 @@ bool FbxStalkerExportStaticMesh(
 		);
 	}
 
-	UVDiffuseElement->GetIndexArray().SetCount(NumFaces * VertsPerFace);
+	if (Mesh->GetLayerCount() == 0)
+	{
+		Mesh->CreateLayer();
+	}
+	
+	FbxLayer* Layer = Mesh->GetLayer(0);
+	Layer->SetUVs(LayerElementDiffuseUV, FbxLayerElement::eTextureDiffuse);
+	Layer->SetMaterials(LayerElementMaterial);
+
 	for (int FaceId = 0; FaceId < NumFaces; ++FaceId)
 	{
-		Mesh->BeginPolygon(-1, -1, -1, false);
+		Mesh->BeginPolygon(0);
 		for (int VertexId = 0; VertexId < VertsPerFace; ++VertexId)
 		{
 			const int Index = FaceId * VertsPerFace + VertexId;
 			Mesh->AddPolygon(IndexBuffer[Index]);
-			UVDiffuseElement->GetIndexArray().SetAt(Index, VertexId);
 		}
 		Mesh->EndPolygon();
 	}
@@ -80,6 +104,7 @@ bool FbxStalkerExportStaticMesh(
 
 void FbxStalkerExportLevelVisuals(
 	const xray_re::xr_level_visuals* LevelVisuals,
+	const xray_re::xr_level_shaders* Shaders,
 	FbxScene* Scene)
 {
 	char Name[128];
@@ -99,8 +124,18 @@ void FbxStalkerExportLevelVisuals(
 			Mesh->Destroy();
 			continue;
 		}
-
 		Node->AddNodeAttribute(Mesh);
+
+		const int TextureId = Ogf->texture_l();
+		const auto& Textures = Shaders->textures();
+		if (TextureId < Textures.size())
+		{
+			const auto Name = Textures[TextureId].c_str();
+			if (auto* Material = Scene->GetMaterial(FbxStalkerGetBaseFilename(Name)))
+			{
+				Node->AddMaterial(Material);
+			}
+		}
 
 		if (const auto* OgfV4 = dynamic_cast<const xray_re::xr_ogf_v4*>(Ogf))
 		{
@@ -121,6 +156,51 @@ void FbxStalkerExportLevelVisuals(
 	}
 }
 
+void FbxStalkerExportLevelMaterials(
+	const xray_re::xr_file_system& Filesystem,
+	const xray_re::xr_level_shaders* Shaders,
+	FbxScene* Scene)
+{
+	for (const auto& ResourcePath : Shaders->textures())
+	{
+		const FbxString RelativePath = ResourcePath.c_str();
+		if (Scene->GetMaterial(RelativePath))
+		{
+			continue;
+		}
+
+		if (!RelativePath.IsEmpty() && !Scene->GetTexture(RelativePath))
+		{
+			const FbxString Name = FbxStalkerGetBaseFilename(RelativePath);
+			auto* Material = FbxSurfacePhong::Create(Scene, Name);
+			if (!Material)
+			{
+				continue;
+			}
+
+			auto ColorProfile = Material->FindProperty(FbxSurfaceMaterial::sDiffuse);
+			if (ColorProfile.IsValid())
+			{
+				const char* Ext = ".png";
+
+				std::string TexturePath;
+				if (Filesystem.resolve_path("$game_textures$", RelativePath, TexturePath))
+				{
+					TexturePath += Ext;
+					if (auto* Texture = FbxFileTexture::Create(Scene, Name + Ext))
+					{
+						Texture->SetFileName(TexturePath.c_str());
+						Texture->SetTextureUse(FbxTexture::eStandard);
+						Texture->SetMappingType(FbxTexture::eUV);
+						Texture->SetScale(1.0, -1.0);
+						Texture->ConnectDstProperty(ColorProfile);
+					}
+				}
+			}
+		}
+	}
+}
+
 void FbxStalkerExportScene(
 	FbxManager* SdkManager,
 	const char* LevelName,
@@ -130,15 +210,15 @@ void FbxStalkerExportScene(
 	char FileName[1024];
 	int FileFormat = 0;
 
-	xray_re::xr_file_system& fs = xray_re::xr_file_system::instance();
-	if (!fs.initialize(XrayPathSpec))
+	xray_re::xr_file_system& Filesystem = xray_re::xr_file_system::instance();
+	if (!Filesystem.initialize(XrayPathSpec))
 	{
 		FBXSDK_printf("Can't initialize xray path spec.\n");
 		return;
 	}
 
-	xray_re::xr_level level;
-	if (!level.load("$game_levels$", LevelName))
+	xray_re::xr_level Level;
+	if (!Level.load("$game_levels$", LevelName))
 	{
 		FBXSDK_printf("Failed to load game level '%s'.\n", LevelName);
 		return;
@@ -162,7 +242,8 @@ void FbxStalkerExportScene(
 		)
 	);
 
-	FbxStalkerExportLevelVisuals(level.visuals(), Scene);
+	FbxStalkerExportLevelMaterials(Filesystem, Level.shaders(), Scene);
+	FbxStalkerExportLevelVisuals(Level.visuals(), Level.shaders(), Scene);
 
 	std::snprintf(FileName, sizeof(FileName), "%s\\%s.fbx", TargetPath, LevelName);
 
@@ -188,12 +269,19 @@ void FbxStalkerExportScene(
 	Scene->Destroy();
 }
 
+} // anonymous namespace
+
 int main()
 {
 	FbxManager* SdkManager = FbxManager::Create();
+	FbxIOSettings* IOSettings = FbxIOSettings::Create(SdkManager, IOSROOT);
+	IOSettings->SetBoolProp(EXP_FBX_EMBEDDED, IOSEnabled);
+	SdkManager->SetIOSettings(IOSettings);
+
 	FbxStalkerExportScene(
 		SdkManager,
 		"l01_escape", "D:\\projects\\stalker\\fsgame.ltx",
 		"D:\\Projects\\fbxgame");
+
 	SdkManager->Destroy();
 }
