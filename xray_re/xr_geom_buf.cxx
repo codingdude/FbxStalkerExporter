@@ -132,6 +132,12 @@ static inline void r_qtexcoord(xr_reader& r, fvector2& uv)
 	uv.y = r.r_s16()*(32.f/32768.f);
 }
 
+static inline void r_qtexcoord2(xr_reader& r, fvector2& uv)
+{
+	uv.x = r.r_s16() * (16.f / 32768.f);
+	uv.y = r.r_s16() * (16.f / 32768.f);
+}
+
 static inline void r_qlightmap(xr_reader& r, fvector2& uv)
 {
 	uv.x = r.r_s16()*(1.f/32768.f);
@@ -217,7 +223,7 @@ void xr_vbuf::load_d3d9(xr_reader& r, size_t n, const d3d_vertex_element ve[], s
 					break;
 				default:
 				case D3D_VE_TYPE_SHORT4:
-					r_qtexcoord(r, m_texcoords[i]);
+					r_qtexcoord2(r, m_texcoords[i]);
 					r.advance(2*sizeof(int16_t));
 					break;
 				}
