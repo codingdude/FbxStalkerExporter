@@ -2,6 +2,7 @@
 
 #include "xray_re/xr_file_system.h"
 #include "xray_re/xr_level.h"
+#include "xray_re/xr_level_cform.h"
 #include "xray_re/xr_level_shaders.h"
 #include "xray_re/xr_level_visuals.h"
 #include "xray_re/xr_ogf.h"
@@ -201,6 +202,48 @@ void FbxStalkerExportLevelMaterials(
 	}
 }
 
+void FbxStalkerExportLevelCollision(
+	xray_re::xr_level_cform* Cform,
+	FbxScene* Scene)
+{
+	const auto& Verts = Cform->vertices();
+	const auto& Faces = Cform->faces();
+
+	if (Verts.empty() || Faces.empty())
+	{
+		return;
+	}
+
+	const auto Name = FbxString("UCX_") + Scene->GetName();
+
+	auto* Mesh = FbxMesh::Create(Scene, Name);
+	auto* Node = FbxNode::Create(Scene, Name);
+
+	Mesh->InitControlPoints(Verts.size());
+
+	FbxVector4* ControlPoints = Mesh->GetControlPoints();
+	for (std::size_t VertId = 0; VertId < Verts.size(); ++VertId)
+	{
+		ControlPoints[VertId].Set(
+			Verts[VertId].p.x,
+			Verts[VertId].p.y,
+			Verts[VertId].p.z
+		);
+	}
+
+	for (std::size_t FaceId = 0; FaceId < Faces.size(); ++FaceId)
+	{
+		Mesh->BeginPolygon(0);
+		Mesh->AddPolygon(Faces[FaceId].v0);
+		Mesh->AddPolygon(Faces[FaceId].v1);
+		Mesh->AddPolygon(Faces[FaceId].v2);
+		Mesh->EndPolygon();
+	}
+
+	Node->AddNodeAttribute(Mesh);
+	Scene->GetRootNode()->AddChild(Node);
+}
+
 void FbxStalkerExportScene(
 	FbxManager* SdkManager,
 	const char* LevelName,
@@ -248,6 +291,7 @@ void FbxStalkerExportScene(
 
 	FbxStalkerExportLevelMaterials(Filesystem, Level.shaders(), Scene);
 	FbxStalkerExportLevelVisuals(Level.visuals(), Level.shaders(), Scene);
+	FbxStalkerExportLevelCollision(Level.cform(), Scene);
 
 	std::snprintf(FileName, sizeof(FileName), "%s\\%s.fbx", TargetPath, LevelName);
 
