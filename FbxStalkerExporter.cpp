@@ -291,7 +291,8 @@ void FbxStalkerExportScene(
 
 	FbxStalkerExportLevelMaterials(Filesystem, Level.shaders(), Scene);
 	FbxStalkerExportLevelVisuals(Level.visuals(), Level.shaders(), Scene);
-	FbxStalkerExportLevelCollision(Level.cform(), Scene);
+//	FIXME: Must be covered by command line option
+//	FbxStalkerExportLevelCollision(Level.cform(), Scene);
 
 	std::snprintf(FileName, sizeof(FileName), "%s\\%s.fbx", TargetPath, LevelName);
 
