@@ -214,7 +214,12 @@ void FbxStalkerExportLevelCollision(
 		return;
 	}
 
-	const auto Name = FbxString("UCX_") + Scene->GetName();
+	const auto Name = FbxString(Scene->GetName()) + "_cform";
+	if (Scene->FindNodeByName(Name))
+	{
+		FBXSDK_printf("Collision form already exists.\n");
+		return;
+	}
 
 	auto* Mesh = FbxMesh::Create(Scene, Name);
 	auto* Node = FbxNode::Create(Scene, Name);
@@ -291,8 +296,7 @@ void FbxStalkerExportScene(
 
 	FbxStalkerExportLevelMaterials(Filesystem, Level.shaders(), Scene);
 	FbxStalkerExportLevelVisuals(Level.visuals(), Level.shaders(), Scene);
-//	FIXME: Must be covered by command line option
-//	FbxStalkerExportLevelCollision(Level.cform(), Scene);
+	FbxStalkerExportLevelCollision(Level.cform(), Scene);
 
 	std::snprintf(FileName, sizeof(FileName), "%s\\%s.fbx", TargetPath, LevelName);
 
