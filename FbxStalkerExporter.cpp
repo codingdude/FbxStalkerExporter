@@ -162,17 +162,16 @@ void FbxStalkerExportLevelMaterials(
 	const xray_re::xr_level_shaders* Shaders,
 	FbxScene* Scene)
 {
-	for (const auto& ResourcePath : Shaders->textures())
+	for (const auto& RelativePath : Shaders->textures())
 	{
-		const FbxString RelativePath = ResourcePath.c_str();
-		if (Scene->GetMaterial(RelativePath))
+		const FbxString Name = FbxStalkerGetBaseFilename(RelativePath.c_str());
+		if (Scene->GetMaterial(Name))
 		{
 			continue;
 		}
 
-		if (!RelativePath.IsEmpty() && !Scene->GetTexture(RelativePath))
+		if (!Name.IsEmpty() && !Scene->GetTexture(Name))
 		{
-			const FbxString Name = FbxStalkerGetBaseFilename(RelativePath);
 			auto* Material = FbxSurfacePhong::Create(Scene, Name);
 			if (!Material)
 			{
@@ -224,7 +223,7 @@ void FbxStalkerExportLevelCollision(
 	auto* Mesh = FbxMesh::Create(Scene, Name);
 	auto* Node = FbxNode::Create(Scene, Name);
 
-	Mesh->InitControlPoints(Verts.size());
+	Mesh->InitControlPoints(static_cast<int>(Verts.size()));
 
 	FbxVector4* ControlPoints = Mesh->GetControlPoints();
 	for (std::size_t VertId = 0; VertId < Verts.size(); ++VertId)
