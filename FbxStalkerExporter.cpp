@@ -1,6 +1,7 @@
 #include <fbxsdk.h>
 
 #include "xray_re/xr_file_system.h"
+#include "xray_re/xr_ini_file.h"
 #include "xray_re/xr_level.h"
 #include "xray_re/xr_level_cform.h"
 #include "xray_re/xr_level_shaders.h"
@@ -103,6 +104,164 @@ bool FbxStalkerExportStaticMesh(
 	return true;
 }
 
+FbxSurfaceMaterial* FbxStalkerExportMaterial(
+	const xray_re::xr_file_system& Filesystem,
+	const FbxString& MaterialPath,
+	FbxScene* Scene)
+{
+	const FbxString Name = FbxStalkerGetBaseFilename(MaterialPath);
+	FbxSurfaceMaterial* Material = Scene->GetMaterial(Name);
+	if (Material)
+	{
+		return Material;
+	}
+
+	if (!Name.IsEmpty() && !Scene->GetTexture(Name))
+	{
+		Material = FbxSurfacePhong::Create(Scene, Name);
+		if (!Material)
+		{
+			return nullptr;
+		}
+
+		auto ColorProfile = Material->FindProperty(FbxSurfaceMaterial::sDiffuse);
+		if (ColorProfile.IsValid())
+		{
+			const char* Ext = ".png";
+
+			std::string TexturePath;
+			if (Filesystem.resolve_path("$game_textures$", MaterialPath, TexturePath))
+			{
+				TexturePath += Ext;
+				if (auto* Texture = FbxFileTexture::Create(Scene, Name + Ext))
+				{
+					Texture->SetFileName(TexturePath.c_str());
+					Texture->SetTextureUse(FbxTexture::eStandard);
+					Texture->SetMappingType(FbxTexture::eUV);
+					Texture->SetScale(1.0, -1.0);
+					Texture->ConnectDstProperty(ColorProfile);
+				}
+			}
+		}
+	}
+
+	return Material;
+}
+
+FbxNode* FbxStalkerExportSkeleton(
+	const xray_re::xr_bone_vec& Bones,
+	FbxScene* Scene,
+	FbxNode* Parent = nullptr)
+{
+	FbxNode* SkeletonRoot = Parent;
+	for (const auto* Bone : Bones)
+	{
+		auto* Limb = FbxSkeleton::Create(Scene, Bone->name().c_str());
+		auto* Node = FbxNode::Create(Scene, Bone->name().c_str());
+		Node->SetNodeAttribute(Limb);
+
+		Node->LclTranslation.Set(
+			FbxVector4(
+				Bone->bind_offset().x,
+				Bone->bind_offset().y,
+				Bone->bind_offset().z
+			));
+
+		const float RadToDeg = static_cast<float>(180.0 / M_PI);
+
+		Node->LclRotation.Set(
+			FbxVector4(
+				Bone->bind_rotate().x * RadToDeg,
+				Bone->bind_rotate().y * RadToDeg,
+				Bone->bind_rotate().z * RadToDeg
+			));
+
+		Limb->Size.Set(1.0);
+
+		if (!Parent && Bone->is_root())
+		{
+			Limb->SetSkeletonType(FbxSkeleton::eRoot);
+			SkeletonRoot = Node;
+			Parent = Node;
+		}
+		else
+		{
+			Limb->SetSkeletonType(FbxSkeleton::eLimbNode);
+			Parent->AddChild(Node);
+		}
+
+		FbxStalkerExportSkeleton(Bone->children(), Scene, Node);
+	}
+
+	return SkeletonRoot;
+}
+
+FbxNode* FbxStalkerExportSkinnedVisual(
+	const xray_re::xr_file_system& Filesystem,
+	const xray_re::xr_ogf* Ogf,
+	FbxScene* Scene,
+	const char* Name)
+{
+	FbxNode* Node = FbxNode::Create(Scene, Name);
+	FbxMesh* Mesh = FbxMesh::Create(Scene, Name);
+
+	if (!FbxStalkerExportStaticMesh(Ogf, Mesh))
+	{
+		FBXSDK_printf("Can't export skinned mesh '%s'.\n", Name);
+		Mesh->Destroy();
+		Node->Destroy();
+		return nullptr;
+	}
+	Node->AddNodeAttribute(Mesh);
+
+	const auto MaterialName = Ogf->texture();
+	if (!MaterialName.empty())
+	{
+		FbxSurfaceMaterial* Material =
+			FbxStalkerExportMaterial(
+				Filesystem,
+				MaterialName.c_str(),
+				Scene);
+
+		if (Material)
+		{
+			Node->AddMaterial(Material);
+		}
+	}
+
+	return Node;
+}
+
+void FbxStalkerExportSkinnedVisuals(
+	const xray_re::xr_file_system& Filesystem,
+	const xray_re::xr_ogf* Ogf,
+	FbxScene* Scene)
+{
+	int Count = 0;
+	char Buffer[1024];
+
+	if (!Ogf->skeletal())
+	{
+		FBXSDK_printf(
+			"Trying to export non-skinned model as dynamic '%s'.\n",
+			Scene->GetName());
+		return;
+	}
+
+	for (const auto Body : Ogf->children())
+	{
+		std::snprintf(Buffer, sizeof(Buffer), "%s_%d", Scene->GetName(), Count);
+		if (auto Node = FbxStalkerExportSkinnedVisual(
+			Filesystem, Body, Scene, Buffer))
+		{
+			Scene->GetRootNode()->AddChild(Node);
+		}
+	}
+
+	FbxNode* Skeleton = FbxStalkerExportSkeleton(Ogf->bones(), Scene);
+	Scene->GetRootNode()->AddChild(Skeleton);
+}
+
 void FbxStalkerExportLevelVisuals(
 	const xray_re::xr_level_visuals* LevelVisuals,
 	const xray_re::xr_level_shaders* Shaders,
@@ -164,40 +323,10 @@ void FbxStalkerExportLevelMaterials(
 {
 	for (const auto& RelativePath : Shaders->textures())
 	{
-		const FbxString Name = FbxStalkerGetBaseFilename(RelativePath.c_str());
-		if (Scene->GetMaterial(Name))
-		{
-			continue;
-		}
-
-		if (!Name.IsEmpty() && !Scene->GetTexture(Name))
-		{
-			auto* Material = FbxSurfacePhong::Create(Scene, Name);
-			if (!Material)
-			{
-				continue;
-			}
-
-			auto ColorProfile = Material->FindProperty(FbxSurfaceMaterial::sDiffuse);
-			if (ColorProfile.IsValid())
-			{
-				const char* Ext = ".png";
-
-				std::string TexturePath;
-				if (Filesystem.resolve_path("$game_textures$", RelativePath, TexturePath))
-				{
-					TexturePath += Ext;
-					if (auto* Texture = FbxFileTexture::Create(Scene, Name + Ext))
-					{
-						Texture->SetFileName(TexturePath.c_str());
-						Texture->SetTextureUse(FbxTexture::eStandard);
-						Texture->SetMappingType(FbxTexture::eUV);
-						Texture->SetScale(1.0, -1.0);
-						Texture->ConnectDstProperty(ColorProfile);
-					}
-				}
-			}
-		}
+		FbxStalkerExportMaterial(
+			Filesystem,
+			RelativePath.c_str(),
+			Scene);
 	}
 }
 
@@ -248,34 +377,15 @@ void FbxStalkerExportLevelCollision(
 	Scene->GetRootNode()->AddChild(Node);
 }
 
-void FbxStalkerExportScene(
+FbxScene* FbxStalkerBeginExportScene(
 	FbxManager* SdkManager,
-	const char* LevelName,
-	const char* XrayPathSpec,
-	const char* TargetPath)
+	const char* SceneName)
 {
-	char FileName[1024];
-	int FileFormat = 0;
-
-	xray_re::xr_file_system& Filesystem = xray_re::xr_file_system::instance();
-	if (!Filesystem.initialize(XrayPathSpec))
-	{
-		FBXSDK_printf("Can't initialize xray path spec.\n");
-		return;
-	}
-
-	xray_re::xr_level Level;
-	if (!Level.load("$game_levels$", LevelName))
-	{
-		FBXSDK_printf("Failed to load game level '%s'.\n", LevelName);
-		return;
-	}
-
-	FbxScene* Scene = FbxScene::Create(SdkManager, LevelName);
+	FbxScene* Scene = FbxScene::Create(SdkManager, SceneName);
 	if (Scene == nullptr)
 	{
 		FBXSDK_printf("Call to FbxScene::Create failed.\n");
-		return;
+		return nullptr;
 	}
 
 	// Switch to the x-ray coordinate system which is left handed,
@@ -293,11 +403,18 @@ void FbxStalkerExportScene(
 
 	FbxSystemUnit::m.ConvertScene(Scene);
 
-	FbxStalkerExportLevelMaterials(Filesystem, Level.shaders(), Scene);
-	FbxStalkerExportLevelVisuals(Level.visuals(), Level.shaders(), Scene);
-	FbxStalkerExportLevelCollision(Level.cform(), Scene);
+	return Scene;
+}
 
-	std::snprintf(FileName, sizeof(FileName), "%s\\%s.fbx", TargetPath, LevelName);
+void FbxStalkerEndExportScene(
+	FbxManager* SdkManager,
+	const char* TargetPath,
+	FbxScene* Scene)
+{
+	char FileName[1024];
+	int FileFormat = 0;
+
+	std::snprintf(FileName, sizeof(FileName), "%s\\%s.fbx", TargetPath, Scene->GetName());
 
 	FbxExporter* Exporter = FbxExporter::Create(SdkManager, "");
 	FileFormat = SdkManager->GetIOPluginRegistry()->GetNativeWriterFormat();
@@ -321,6 +438,84 @@ void FbxStalkerExportScene(
 	Scene->Destroy();
 }
 
+void FbxStalkerExportLevel(
+	FbxManager* SdkManager,
+	const char* LevelName,
+	const char* XrayPathSpec,
+	const char* TargetPath)
+{
+	xray_re::xr_file_system& Filesystem = xray_re::xr_file_system::instance();
+	if (!Filesystem.initialize(XrayPathSpec))
+	{
+		FBXSDK_printf("Can't initialize xray path spec.\n");
+		return;
+	}
+
+	xray_re::xr_level Level;
+	if (!Level.load("$game_levels$", LevelName))
+	{
+		FBXSDK_printf("Failed to load game level '%s'.\n", LevelName);
+		return;
+	}
+
+	FbxScene* Scene = FbxStalkerBeginExportScene(SdkManager, LevelName);
+	if (!Scene)
+	{
+		FBXSDK_printf("Failed to create FBX level '%s'.\n", LevelName);
+		return;
+	}
+
+	FbxStalkerExportLevelMaterials(Filesystem, Level.shaders(), Scene);
+	FbxStalkerExportLevelVisuals(Level.visuals(), Level.shaders(), Scene);
+	FbxStalkerExportLevelCollision(Level.cform(), Scene);
+
+	FbxStalkerEndExportScene(SdkManager, TargetPath, Scene);
+}
+
+void FbxStalkerExportActor(
+	FbxManager* SdkManager,
+	const char* ActorName,
+	const char* XrayPathSpec,
+	const char* TargetPath)
+{
+	int FileFormat = 0;
+
+	xray_re::xr_file_system& Filesystem = xray_re::xr_file_system::instance();
+	if (!Filesystem.initialize(XrayPathSpec))
+	{
+		FBXSDK_printf("Can't initialize xray path spec.\n");
+		return;
+	}
+
+	auto Inifile = new xray_re::xr_ini_file(xray_re::PA_GAME_CONFIG, "system.ltx");
+	if (!Inifile)
+	{
+		FBXSDK_printf("Can't open system.ltx.\n");
+		return;
+	}
+
+	std::string VisualPath;
+	const auto Filename = Inifile->r_string(ActorName, "visual");
+	Filesystem.resolve_path(xray_re::PA_GAME_MESHES, Filename, VisualPath);
+
+	const auto Ogf = xray_re::xr_ogf::load_ogf(VisualPath + ".ogf");
+	if (!Ogf)
+	{
+		FBXSDK_printf("Can't load game visual '%s'\n", VisualPath.c_str());
+		return;
+	}
+
+	FbxScene* Scene = FbxStalkerBeginExportScene(SdkManager, ActorName);
+	if (!Scene)
+	{
+		FBXSDK_printf("Failed to create FBX actor '%s'.\n", ActorName);
+		return;
+	}
+
+	FbxStalkerExportSkinnedVisuals(Filesystem, Ogf, Scene);
+	FbxStalkerEndExportScene(SdkManager, TargetPath, Scene);
+}
+
 } // anonymous namespace
 
 int main()
@@ -330,10 +525,18 @@ int main()
 	IOSettings->SetBoolProp(EXP_FBX_EMBEDDED, IOSEnabled);
 	SdkManager->SetIOSettings(IOSettings);
 
-	FbxStalkerExportScene(
+	// FIXME: must be replaced with if-else statement when command line parser will be present
+#if 0
+	FbxStalkerExportLevel(
 		SdkManager,
 		"l11_pripyat", "D:\\projects\\stalker\\fsgame.ltx",
 		"D:\\Projects\\fbxgame");
+#else
+	FbxStalkerExportActor(
+		SdkManager,
+		"m_trader", "D:\\projects\\stalker\\fsgame.ltx",
+		"D:\\Projects\\fbxgame");
 
 	SdkManager->Destroy();
+#endif
 }
