@@ -14,7 +14,7 @@ namespace {
 inline FbxString FbxStalkerGetBaseFilename(const char* Path)
 {
 	const FbxString FilePath = Path;
-	const int Pos = FilePath.Find('\\');
+	const int Pos = FilePath.ReverseFind('\\');
 
 	if (Pos != -1)
 	{
@@ -148,52 +148,168 @@ FbxSurfaceMaterial* FbxStalkerExportMaterial(
 	return Material;
 }
 
+FbxNode* FbxStalkerExportBone(
+	const xray_re::xr_bone* Bone,
+	FbxScene* Scene,
+	FbxSkeleton::EType Type)
+{
+	auto* Limb = FbxSkeleton::Create(Scene, "");
+	auto* Node = FbxNode::Create(Scene, Bone->name().c_str());
+
+	Limb->SetSkeletonType(Type);
+	Limb->Size.Set(0.5);
+
+	Node->SetNodeAttribute(Limb);
+	Node->SetUserDataPtr(
+		const_cast<xray_re::xr_bone*>(Bone));
+
+	Node->LclTranslation.Set(
+		FbxDouble3(
+			Bone->bind_offset().x,
+			Bone->bind_offset().y,
+			Bone->bind_offset().z
+		));
+
+	xray_re::fmatrix Xform;
+	Xform.set_xyz_i(
+		Bone->bind_rotate().x,
+		Bone->bind_rotate().y,
+		Bone->bind_rotate().z);
+
+	float X, Y, Z;
+	Xform.get_euler_xyz(X, Y, Z);
+	const float RadToDeg = static_cast<float>(180.0 / M_PI);
+	Node->LclRotation.Set(FbxDouble3(X * RadToDeg, Y * RadToDeg, Z * RadToDeg));
+
+	return Node;
+}
+
 FbxNode* FbxStalkerExportSkeleton(
 	const xray_re::xr_bone_vec& Bones,
 	FbxScene* Scene,
-	FbxNode* Parent = nullptr)
+	FbxNode* Root = nullptr)
 {
-	FbxNode* SkeletonRoot = Parent;
-	for (const auto* Bone : Bones)
+	if (Root == nullptr)
 	{
-		auto* Limb = FbxSkeleton::Create(Scene, Bone->name().c_str());
-		auto* Node = FbxNode::Create(Scene, Bone->name().c_str());
-		Node->SetNodeAttribute(Limb);
-
-		Node->LclTranslation.Set(
-			FbxVector4(
-				Bone->bind_offset().x,
-				Bone->bind_offset().y,
-				Bone->bind_offset().z
-			));
-
-		const float RadToDeg = static_cast<float>(180.0 / M_PI);
-
-		Node->LclRotation.Set(
-			FbxVector4(
-				Bone->bind_rotate().x * RadToDeg,
-				Bone->bind_rotate().y * RadToDeg,
-				Bone->bind_rotate().z * RadToDeg
-			));
-
-		Limb->Size.Set(1.0);
-
-		if (!Parent && Bone->is_root())
+		for (const auto* Bone : Bones)
 		{
-			Limb->SetSkeletonType(FbxSkeleton::eRoot);
-			SkeletonRoot = Node;
-			Parent = Node;
-		}
-		else
-		{
-			Limb->SetSkeletonType(FbxSkeleton::eLimbNode);
-			Parent->AddChild(Node);
+			if (Bone->is_root())
+			{
+				Root = FbxStalkerExportBone(
+					Bone, Scene, FbxSkeleton::eRoot);
+				break;
+			}
 		}
 
-		FbxStalkerExportSkeleton(Bone->children(), Scene, Node);
+		if (Root == nullptr)
+		{
+			return Root;
+		}
 	}
 
-	return SkeletonRoot;
+	const auto& Bone = static_cast<xray_re::xr_bone*>(
+		Root->GetUserDataPtr());
+	for (const auto* Child : Bone->children())
+	{
+		auto Node = FbxStalkerExportBone(
+			Child, Scene, FbxSkeleton::eLimbNode);
+		auto Skeleton = FbxStalkerExportSkeleton(
+			Bones, Scene, Node);
+		Root->AddChild(Skeleton);
+	}
+
+	return Root;
+}
+
+FbxNode* FbxStalkerGetBone(FbxNode* Skeleton, int BoneId)
+{
+	auto Bone = reinterpret_cast<xray_re::xr_bone*>(
+		Skeleton->GetUserDataPtr());
+	if (Bone && Bone->id() == BoneId)
+	{
+		return Skeleton;
+	}
+
+	for (int ChildId = 0; ChildId < Skeleton->GetChildCount(); ++ChildId)
+	{
+		auto Child = Skeleton->GetChild(ChildId);
+		if (auto Bone = FbxStalkerGetBone(Child, BoneId))
+		{
+			return Bone;
+		}
+	}
+
+	return nullptr;
+}
+
+void FbxStalkerInitClusters(FbxNode* Skeleton, FbxSkin* Skin, FbxScene* Scene)
+{
+	auto Matrix = Skeleton->EvaluateGlobalTransform();
+	auto Cluster = FbxCluster::Create(Scene, "");
+
+	Cluster->SetLink(Skeleton);
+	Cluster->SetLinkMode(FbxCluster::eTotalOne);
+	Cluster->SetTransformLinkMatrix(Matrix);
+	Skin->AddCluster(Cluster);
+
+	for (int ChildId = 0; ChildId < Skeleton->GetChildCount(); ++ChildId)
+	{
+		auto Child = Skeleton->GetChild(ChildId);
+		FbxStalkerInitClusters(Child, Skin, Scene);
+	}
+}
+
+void FbxStalkerCreateSkin(
+	FbxNode* Skeleton,
+	FbxNode* Visual,
+	FbxScene* Scene,
+	const xray_re::xr_vbuf& Verts)
+{
+	auto Mesh = Visual->GetMesh();
+	if (Mesh == nullptr)
+	{
+		FBXSDK_printf(
+			"Unable to apply skin to scene visual '%s'.\n",
+			Visual->GetName());
+		return;
+	}
+
+	auto Skin = FbxSkin::Create(Scene, "");
+	
+	FbxStalkerInitClusters(Skeleton, Skin, Scene);
+	for (int VertId = 0; VertId < Verts.size(); ++VertId)
+	{
+		const auto& Influences = Verts.w(VertId);
+		for (int InfluenceId = 0; InfluenceId < Influences.count; ++InfluenceId)
+		{
+			const auto& Influence = Influences[InfluenceId];
+
+			FbxNode* Bone = FbxStalkerGetBone(
+				Skeleton, Influence.bone);
+			if (Bone == nullptr)
+			{
+				FBXSDK_printf(
+					"Unexpected bone index #%d used while trying to export skin",
+					Influence.bone);
+				Skin->Destroy();
+				return;
+			}
+
+			FbxCluster* Cluster = Skin->GetCluster(Influence.bone);
+			if (Cluster == nullptr)
+			{
+				FBXSDK_printf(
+					"Unexpected bone index #%d used while trying to export skin",
+					Influence.bone);
+				Skin->Destroy();
+				return;
+			}
+
+			Cluster->AddControlPointIndex(VertId, Influence.weight);
+		}
+	}
+
+	Mesh->AddDeformer(Skin);
 }
 
 FbxNode* FbxStalkerExportSkinnedVisual(
@@ -207,7 +323,6 @@ FbxNode* FbxStalkerExportSkinnedVisual(
 
 	if (!FbxStalkerExportStaticMesh(Ogf, Mesh))
 	{
-		FBXSDK_printf("Can't export skinned mesh '%s'.\n", Name);
 		Mesh->Destroy();
 		Node->Destroy();
 		return nullptr;
@@ -248,18 +363,26 @@ void FbxStalkerExportSkinnedVisuals(
 		return;
 	}
 
+	FbxNode* Skeleton = FbxStalkerExportSkeleton(Ogf->bones(), Scene);
+	if (!Skeleton)
+	{
+		FBXSDK_printf("Can't export skeleton hierarchy");
+		return;
+	}
+	Scene->GetRootNode()->AddChild(Skeleton);
+
 	for (const auto Body : Ogf->children())
 	{
-		std::snprintf(Buffer, sizeof(Buffer), "%s_%d", Scene->GetName(), Count);
-		if (auto Node = FbxStalkerExportSkinnedVisual(
-			Filesystem, Body, Scene, Buffer))
+		std::snprintf(Buffer, sizeof(Buffer), "%s_%d", Scene->GetName(), Count++);
+		auto Node = FbxStalkerExportSkinnedVisual(Filesystem, Body, Scene, Buffer);
+		if (Node == nullptr)
 		{
-			Scene->GetRootNode()->AddChild(Node);
+			FBXSDK_printf("Can't export skinned mesh '%s'.\n", Buffer);
+			continue;
 		}
+		Scene->GetRootNode()->AddChild(Node);
+		FbxStalkerCreateSkin(Skeleton, Node, Scene, Body->vb());
 	}
-
-	FbxNode* Skeleton = FbxStalkerExportSkeleton(Ogf->bones(), Scene);
-	Scene->GetRootNode()->AddChild(Skeleton);
 }
 
 void FbxStalkerExportLevelVisuals(
@@ -478,8 +601,6 @@ void FbxStalkerExportActor(
 	const char* XrayPathSpec,
 	const char* TargetPath)
 {
-	int FileFormat = 0;
-
 	xray_re::xr_file_system& Filesystem = xray_re::xr_file_system::instance();
 	if (!Filesystem.initialize(XrayPathSpec))
 	{
@@ -487,17 +608,8 @@ void FbxStalkerExportActor(
 		return;
 	}
 
-	auto Inifile = new xray_re::xr_ini_file(xray_re::PA_GAME_CONFIG, "system.ltx");
-	if (!Inifile)
-	{
-		FBXSDK_printf("Can't open system.ltx.\n");
-		return;
-	}
-
 	std::string VisualPath;
-	const auto Filename = Inifile->r_string(ActorName, "visual");
-	Filesystem.resolve_path(xray_re::PA_GAME_MESHES, Filename, VisualPath);
-
+	Filesystem.resolve_path(xray_re::PA_GAME_MESHES, ActorName, VisualPath);
 	const auto Ogf = xray_re::xr_ogf::load_ogf(VisualPath + ".ogf");
 	if (!Ogf)
 	{
@@ -505,10 +617,11 @@ void FbxStalkerExportActor(
 		return;
 	}
 
-	FbxScene* Scene = FbxStalkerBeginExportScene(SdkManager, ActorName);
+	const auto Name = FbxStalkerGetBaseFilename(ActorName);
+	FbxScene* Scene = FbxStalkerBeginExportScene(SdkManager, Name);
 	if (!Scene)
 	{
-		FBXSDK_printf("Failed to create FBX actor '%s'.\n", ActorName);
+		FBXSDK_printf("Failed to create FBX actor '%s'.\n", Name.Buffer());
 		return;
 	}
 
@@ -534,7 +647,8 @@ int main()
 #else
 	FbxStalkerExportActor(
 		SdkManager,
-		"m_trader", "D:\\projects\\stalker\\fsgame.ltx",
+		"actors\\trader\\trader",
+		"D:\\projects\\stalker\\fsgame.ltx",
 		"D:\\Projects\\fbxgame");
 
 	SdkManager->Destroy();
