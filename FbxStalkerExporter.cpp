@@ -1,5 +1,6 @@
 #include <fbxsdk.h>
 
+#include "xray_re/xr_envelope.h"
 #include "xray_re/xr_file_system.h"
 #include "xray_re/xr_ini_file.h"
 #include "xray_re/xr_level.h"
@@ -385,6 +386,130 @@ void FbxStalkerExportSkinnedVisuals(
 	}
 }
 
+void FbxStalkerExportMotions(
+	const xray_re::xr_file_system& Filesystem,
+	xray_re::xr_ogf* Ogf,
+	FbxScene* Scene)
+{
+	const float RadToDeg = static_cast<float>(180.0 / M_PI);
+
+	const char* const CurveComponents[] = {
+		FBXSDK_CURVENODE_COMPONENT_X,
+		FBXSDK_CURVENODE_COMPONENT_Y,
+		FBXSDK_CURVENODE_COMPONENT_Z
+	};
+
+	auto RootNode = Scene->GetRootNode();
+	if (RootNode == nullptr)
+	{
+		return;
+	}
+
+	FbxNode* Skeleton = nullptr;
+	for (int ChildId = 0; ChildId < RootNode->GetChildCount(); ++ChildId)
+	{
+		auto Node = RootNode->GetChild(ChildId);
+		if (Node->GetSkeleton() != nullptr)
+		{
+			Skeleton = Node;
+		}
+	}
+
+	if (Skeleton == nullptr)
+	{
+		return;
+	}
+
+	if (auto OgfV4 = static_cast<xray_re::xr_ogf_v4*>(Ogf))
+	{
+		const char* Span = ";";
+		const char* Ext = ".omf";
+
+		const FbxString MotionRefs = OgfV4->motion_refs().c_str();
+		for (int TokenId = 0; TokenId < MotionRefs.GetTokenCount(Span); ++TokenId)
+		{
+			std::string Path;
+			auto MotionRef = MotionRefs.GetToken(TokenId, Span);
+			Filesystem.resolve_path(xray_re::PA_GAME_MESHES, MotionRef, Path);
+			OgfV4->load_omf((Path + Ext).c_str());
+		}
+	}
+
+	FbxTime Time;
+	for (const auto& Motion : Ogf->motions())
+	{
+		auto AnimStack = FbxAnimStack::Create(Scene, Motion->name().c_str());
+		auto AnimLayer = FbxAnimLayer::Create(Scene, "Base Layer");
+		AnimStack->AddMember(AnimLayer);
+		
+		const auto& BoneMotions = Motion->bone_motions();
+		for (int BoneId = 0; BoneId < BoneMotions.size(); ++BoneId)
+		{
+			auto BoneMotion = BoneMotions[BoneId];
+			auto Bone = FbxStalkerGetBone(Skeleton, BoneId);
+
+			FbxSet<float> Timeline;
+			for (int EnvelopeId = 3; EnvelopeId < 6; ++EnvelopeId)
+			{
+				const auto Envelope = BoneMotion->envelopes()[EnvelopeId];
+				for (auto Key : Envelope->keys())
+				{
+					Timeline.Insert(Key->time);
+				}
+			}
+
+			FbxMap<float, FbxDouble3> RotationKeys;
+			for (auto Time = Timeline.Begin(); Time != Timeline.End(); ++Time)
+			{
+				xray_re::fmatrix Xform;
+				xray_re::fvector3 Translation, Rotation;
+				BoneMotion->evaluate(Time->GetValue(), Translation, Rotation);
+				Xform.set_xyz_i(Rotation);
+				Xform.get_euler_xyz(Rotation);
+				RotationKeys.Insert(
+					Time->GetValue(),
+					{ Rotation.x,  Rotation.y, Rotation.z });
+			}
+
+			for (int EnvId = 0; EnvId < 6; ++EnvId)
+			{
+				FbxAnimCurve* Curve;
+				const auto Component = CurveComponents[EnvId % 3];
+				const auto& Envelope = BoneMotion->envelopes()[EnvId];
+
+				if (EnvId < 3)
+				{
+					Curve = Bone->LclTranslation.GetCurve(AnimLayer, Component, true);
+					Curve->KeyModifyBegin();
+					for (const auto& Key : Envelope->keys())
+					{
+						Time.SetSecondDouble(Key->time);
+						int KeyIndex = Curve->KeyAdd(Time);
+						Curve->KeySetValue(KeyIndex, Key->value);
+						Curve->KeySetInterpolation(KeyIndex, FbxAnimCurveDef::eInterpolationCubic);
+					}
+					Curve->KeyModifyEnd();
+				}
+				else
+				{
+					Curve = Bone->LclRotation.GetCurve(AnimLayer, Component, true);
+					Curve->KeyModifyBegin();
+					for (auto Key = RotationKeys.Begin(); Key != RotationKeys.End(); ++Key)
+					{
+						Time.SetSecondDouble(Key->GetKey());
+						int KeyIndex = Curve->KeyAdd(Time);
+						Curve->KeySetValue(KeyIndex, Key->GetValue()[EnvId % 3] * RadToDeg);
+						Curve->KeySetInterpolation(KeyIndex, FbxAnimCurveDef::eInterpolationCubic);
+					}
+					Curve->KeyModifyEnd();
+				}
+			}
+		}
+
+		FbxAnimCurveFilterResample().Apply(AnimStack);
+	}
+}
+
 void FbxStalkerExportLevelVisuals(
 	const xray_re::xr_level_visuals* LevelVisuals,
 	const xray_re::xr_level_shaders* Shaders,
@@ -575,7 +700,7 @@ void FbxStalkerExportLevel(
 	}
 
 	xray_re::xr_level Level;
-	if (!Level.load("$game_levels$", LevelName))
+	if (!Level.load(xray_re::PA_GAME_LEVELS, LevelName))
 	{
 		FBXSDK_printf("Failed to load game level '%s'.\n", LevelName);
 		return;
@@ -626,6 +751,7 @@ void FbxStalkerExportActor(
 	}
 
 	FbxStalkerExportSkinnedVisuals(Filesystem, Ogf, Scene);
+	FbxStalkerExportMotions(Filesystem, Ogf, Scene);
 	FbxStalkerEndExportScene(SdkManager, TargetPath, Scene);
 }
 
@@ -647,7 +773,7 @@ int main()
 #else
 	FbxStalkerExportActor(
 		SdkManager,
-		"actors\\trader\\trader",
+		"weapons\\vodka\\vodka_hud",
 		"D:\\projects\\stalker\\fsgame.ltx",
 		"D:\\Projects\\fbxgame");
 
