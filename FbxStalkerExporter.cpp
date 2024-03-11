@@ -281,7 +281,7 @@ void FbxStalkerCreateSkin(
 	for (int VertId = 0; VertId < Verts.size(); ++VertId)
 	{
 		const auto& Influences = Verts.w(VertId);
-		for (int InfluenceId = 0; InfluenceId < Influences.count; ++InfluenceId)
+		for (int InfluenceId = 0; InfluenceId < static_cast<int>(Influences.count); ++InfluenceId)
 		{
 			const auto& Influence = Influences[InfluenceId];
 
@@ -461,7 +461,7 @@ void FbxStalkerExportMotion(
 				{
 					Time.SetSecondDouble(Key->GetKey());
 					int KeyIndex = Curve->KeyAdd(Time);
-					Curve->KeySetValue(KeyIndex, Key->GetValue()[EnvId % 3] * RadToDeg);
+					Curve->KeySetValue(KeyIndex, static_cast<float>(Key->GetValue()[EnvId % 3]) * RadToDeg);
 					Curve->KeySetInterpolation(KeyIndex, FbxAnimCurveDef::eInterpolationCubic);
 				}
 				Curve->KeyModifyEnd();
