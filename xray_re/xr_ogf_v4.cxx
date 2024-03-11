@@ -432,11 +432,9 @@ void xr_ogf_v4::load_s_smparams(xr_reader& r)
 	uint16_t version = r.r_u16();
 	xr_assert(version == OGF4_S_SMPARAMS_VERSION_3 || version == OGF4_S_SMPARAMS_VERSION_4);
 
-	assert(m_partitions.empty());
 	r.r_seq(r.r_u16(), m_partitions, read_partition_v4(m_bones));
 	setup_partitions();
 
-	assert(m_motions.empty());
 	size_t num_motions = r.r_u16();
 	m_motions.resize(num_motions);
 	for (; num_motions; --num_motions) {

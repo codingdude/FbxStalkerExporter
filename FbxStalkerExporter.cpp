@@ -386,9 +386,9 @@ void FbxStalkerExportSkinnedVisuals(
 	}
 }
 
-void FbxStalkerExportMotions(
-	const xray_re::xr_file_system& Filesystem,
-	xray_re::xr_ogf* Ogf,
+void FbxStalkerExportMotion(
+	const xray_re::xr_skl_motion* Motion,
+	FbxNode* Skeleton,
 	FbxScene* Scene)
 {
 	const float RadToDeg = static_cast<float>(180.0 / M_PI);
@@ -399,6 +399,84 @@ void FbxStalkerExportMotions(
 		FBXSDK_CURVENODE_COMPONENT_Z
 	};
 
+	FbxTime Time;
+
+	auto AnimStack = FbxAnimStack::Create(Scene, Motion->name().c_str());
+	auto AnimLayer = FbxAnimLayer::Create(Scene, "Base Layer");
+	AnimStack->AddMember(AnimLayer);
+
+	const auto& BoneMotions = Motion->bone_motions();
+	for (int BoneId = 0; BoneId < BoneMotions.size(); ++BoneId)
+	{
+		auto BoneMotion = BoneMotions[BoneId];
+		auto Bone = FbxStalkerGetBone(Skeleton, BoneId);
+
+		FbxSet<float> Timeline;
+		for (int EnvelopeId = 3; EnvelopeId < 6; ++EnvelopeId)
+		{
+			const auto Envelope = BoneMotion->envelopes()[EnvelopeId];
+			for (auto Key : Envelope->keys())
+			{
+				Timeline.Insert(Key->time);
+			}
+		}
+
+		FbxMap<float, FbxDouble3> RotationKeys;
+		for (auto Time = Timeline.Begin(); Time != Timeline.End(); ++Time)
+		{
+			xray_re::fmatrix Xform;
+			xray_re::fvector3 Translation, Rotation;
+			BoneMotion->evaluate(Time->GetValue(), Translation, Rotation);
+			Xform.set_xyz_i(Rotation);
+			Xform.get_euler_xyz(Rotation);
+			RotationKeys.Insert(
+				Time->GetValue(),
+				{ Rotation.x,  Rotation.y, Rotation.z });
+		}
+
+		for (int EnvId = 0; EnvId < 6; ++EnvId)
+		{
+			FbxAnimCurve* Curve;
+			const auto Component = CurveComponents[EnvId % 3];
+			const auto& Envelope = BoneMotion->envelopes()[EnvId];
+
+			if (EnvId < 3)
+			{
+				Curve = Bone->LclTranslation.GetCurve(AnimLayer, Component, true);
+				Curve->KeyModifyBegin();
+				for (const auto& Key : Envelope->keys())
+				{
+					Time.SetSecondDouble(Key->time);
+					int KeyIndex = Curve->KeyAdd(Time);
+					Curve->KeySetValue(KeyIndex, Key->value);
+					Curve->KeySetInterpolation(KeyIndex, FbxAnimCurveDef::eInterpolationCubic);
+				}
+				Curve->KeyModifyEnd();
+			}
+			else
+			{
+				Curve = Bone->LclRotation.GetCurve(AnimLayer, Component, true);
+				Curve->KeyModifyBegin();
+				for (auto Key = RotationKeys.Begin(); Key != RotationKeys.End(); ++Key)
+				{
+					Time.SetSecondDouble(Key->GetKey());
+					int KeyIndex = Curve->KeyAdd(Time);
+					Curve->KeySetValue(KeyIndex, Key->GetValue()[EnvId % 3] * RadToDeg);
+					Curve->KeySetInterpolation(KeyIndex, FbxAnimCurveDef::eInterpolationCubic);
+				}
+				Curve->KeyModifyEnd();
+			}
+		}
+	}
+
+	FbxAnimCurveFilterResample().Apply(AnimStack);
+}
+
+void FbxStalkerExportMotions(
+	const xray_re::xr_file_system& Filesystem,
+	xray_re::xr_ogf* Ogf,
+	FbxScene* Scene)
+{
 	auto RootNode = Scene->GetRootNode();
 	if (RootNode == nullptr)
 	{
@@ -420,9 +498,10 @@ void FbxStalkerExportMotions(
 		return;
 	}
 
+	xray_re::xr_skl_motion_vec motions;
 	if (auto OgfV4 = static_cast<xray_re::xr_ogf_v4*>(Ogf))
 	{
-		const char* Span = ";";
+		const char* Span = ",";
 		const char* Ext = ".omf";
 
 		const FbxString MotionRefs = OgfV4->motion_refs().c_str();
@@ -432,81 +511,17 @@ void FbxStalkerExportMotions(
 			auto MotionRef = MotionRefs.GetToken(TokenId, Span);
 			Filesystem.resolve_path(xray_re::PA_GAME_MESHES, MotionRef, Path);
 			OgfV4->load_omf((Path + Ext).c_str());
+			motions.insert(motions.end(), Ogf->motions().begin(), Ogf->motions().end());
 		}
 	}
-
-	FbxTime Time;
-	for (const auto& Motion : Ogf->motions())
+	else
 	{
-		auto AnimStack = FbxAnimStack::Create(Scene, Motion->name().c_str());
-		auto AnimLayer = FbxAnimLayer::Create(Scene, "Base Layer");
-		AnimStack->AddMember(AnimLayer);
-		
-		const auto& BoneMotions = Motion->bone_motions();
-		for (int BoneId = 0; BoneId < BoneMotions.size(); ++BoneId)
-		{
-			auto BoneMotion = BoneMotions[BoneId];
-			auto Bone = FbxStalkerGetBone(Skeleton, BoneId);
+		motions = Ogf->motions();
+	}
 
-			FbxSet<float> Timeline;
-			for (int EnvelopeId = 3; EnvelopeId < 6; ++EnvelopeId)
-			{
-				const auto Envelope = BoneMotion->envelopes()[EnvelopeId];
-				for (auto Key : Envelope->keys())
-				{
-					Timeline.Insert(Key->time);
-				}
-			}
-
-			FbxMap<float, FbxDouble3> RotationKeys;
-			for (auto Time = Timeline.Begin(); Time != Timeline.End(); ++Time)
-			{
-				xray_re::fmatrix Xform;
-				xray_re::fvector3 Translation, Rotation;
-				BoneMotion->evaluate(Time->GetValue(), Translation, Rotation);
-				Xform.set_xyz_i(Rotation);
-				Xform.get_euler_xyz(Rotation);
-				RotationKeys.Insert(
-					Time->GetValue(),
-					{ Rotation.x,  Rotation.y, Rotation.z });
-			}
-
-			for (int EnvId = 0; EnvId < 6; ++EnvId)
-			{
-				FbxAnimCurve* Curve;
-				const auto Component = CurveComponents[EnvId % 3];
-				const auto& Envelope = BoneMotion->envelopes()[EnvId];
-
-				if (EnvId < 3)
-				{
-					Curve = Bone->LclTranslation.GetCurve(AnimLayer, Component, true);
-					Curve->KeyModifyBegin();
-					for (const auto& Key : Envelope->keys())
-					{
-						Time.SetSecondDouble(Key->time);
-						int KeyIndex = Curve->KeyAdd(Time);
-						Curve->KeySetValue(KeyIndex, Key->value);
-						Curve->KeySetInterpolation(KeyIndex, FbxAnimCurveDef::eInterpolationCubic);
-					}
-					Curve->KeyModifyEnd();
-				}
-				else
-				{
-					Curve = Bone->LclRotation.GetCurve(AnimLayer, Component, true);
-					Curve->KeyModifyBegin();
-					for (auto Key = RotationKeys.Begin(); Key != RotationKeys.End(); ++Key)
-					{
-						Time.SetSecondDouble(Key->GetKey());
-						int KeyIndex = Curve->KeyAdd(Time);
-						Curve->KeySetValue(KeyIndex, Key->GetValue()[EnvId % 3] * RadToDeg);
-						Curve->KeySetInterpolation(KeyIndex, FbxAnimCurveDef::eInterpolationCubic);
-					}
-					Curve->KeyModifyEnd();
-				}
-			}
-		}
-
-		FbxAnimCurveFilterResample().Apply(AnimStack);
+	for (const auto& Motion : motions)
+	{
+		FbxStalkerExportMotion(Motion, Skeleton, Scene);
 	}
 }
 
@@ -773,7 +788,7 @@ int main()
 #else
 	FbxStalkerExportActor(
 		SdkManager,
-		"weapons\\vodka\\vodka_hud",
+		"actors\\trader\\trader",
 		"D:\\projects\\stalker\\fsgame.ltx",
 		"D:\\Projects\\fbxgame");
 
