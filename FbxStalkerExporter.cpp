@@ -498,7 +498,7 @@ void FbxStalkerExportMotions(
 		return;
 	}
 
-	xray_re::xr_skl_motion_vec motions;
+	xray_re::xr_skl_motion_vec motions = Ogf->motions();
 	if (auto OgfV4 = static_cast<xray_re::xr_ogf_v4*>(Ogf))
 	{
 		const char* Span = ",";
@@ -513,10 +513,6 @@ void FbxStalkerExportMotions(
 			OgfV4->load_omf((Path + Ext).c_str());
 			motions.insert(motions.end(), Ogf->motions().begin(), Ogf->motions().end());
 		}
-	}
-	else
-	{
-		motions = Ogf->motions();
 	}
 
 	for (const auto& Motion : motions)
@@ -788,7 +784,7 @@ int main()
 #else
 	FbxStalkerExportActor(
 		SdkManager,
-		"actors\\trader\\trader",
+		"monsters\\krovosos\\krovosos",
 		"D:\\projects\\stalker\\fsgame.ltx",
 		"D:\\Projects\\fbxgame");
 
