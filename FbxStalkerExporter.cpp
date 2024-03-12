@@ -12,6 +12,14 @@
 
 namespace {
 
+enum class FbxStalkerMotionsExportType
+{
+	eWitoutMotions,
+	eWithInternalMotions,
+	eWithExternalMotions,
+	eExternalMotionsOnly
+};
+
 inline FbxString FbxStalkerGetBaseFilename(const char* Path)
 {
 	const FbxString FilePath = Path;
@@ -475,7 +483,8 @@ void FbxStalkerExportMotion(
 void FbxStalkerExportMotions(
 	const xray_re::xr_file_system& Filesystem,
 	xray_re::xr_ogf* Ogf,
-	FbxScene* Scene)
+	FbxScene* Scene,
+	FbxStalkerMotionsExportType ExportType)
 {
 	auto RootNode = Scene->GetRootNode();
 	if (RootNode == nullptr)
@@ -495,27 +504,39 @@ void FbxStalkerExportMotions(
 
 	if (Skeleton == nullptr)
 	{
-		return;
-	}
-
-	xray_re::xr_skl_motion_vec motions = Ogf->motions();
-	if (auto OgfV4 = static_cast<xray_re::xr_ogf_v4*>(Ogf))
-	{
-		const char* Span = ",";
-		const char* Ext = ".omf";
-
-		const FbxString MotionRefs = OgfV4->motion_refs().c_str();
-		for (int TokenId = 0; TokenId < MotionRefs.GetTokenCount(Span); ++TokenId)
+		Skeleton = FbxStalkerExportSkeleton(Ogf->bones(), Scene);
+		if (Skeleton == nullptr)
 		{
-			std::string Path;
-			auto MotionRef = MotionRefs.GetToken(TokenId, Span);
-			Filesystem.resolve_path(xray_re::PA_GAME_MESHES, MotionRef, Path);
-			OgfV4->load_omf((Path + Ext).c_str());
-			motions.insert(motions.end(), Ogf->motions().begin(), Ogf->motions().end());
+			return;
 		}
 	}
 
-	for (const auto& Motion : motions)
+	xray_re::xr_skl_motion_vec Motions;
+	if (ExportType != FbxStalkerMotionsExportType::eExternalMotionsOnly)
+	{
+		Motions = Ogf->motions();
+	}
+
+	if (ExportType != FbxStalkerMotionsExportType::eWithInternalMotions)
+	{
+		if (auto OgfV4 = static_cast<xray_re::xr_ogf_v4*>(Ogf))
+		{
+			const char* Span = ",";
+			const char* Ext = ".omf";
+
+			const FbxString MotionRefs = OgfV4->motion_refs().c_str();
+			for (int TokenId = 0; TokenId < MotionRefs.GetTokenCount(Span); ++TokenId)
+			{
+				std::string Path;
+				auto MotionRef = MotionRefs.GetToken(TokenId, Span);
+				Filesystem.resolve_path(xray_re::PA_GAME_MESHES, MotionRef, Path);
+				OgfV4->load_omf((Path + Ext).c_str());
+				Motions.insert(Motions.end(), Ogf->motions().begin(), Ogf->motions().end());
+			}
+		}
+	}
+
+	for (const auto& Motion : Motions)
 	{
 		FbxStalkerExportMotion(Motion, Skeleton, Scene);
 	}
@@ -735,7 +756,8 @@ void FbxStalkerExportActor(
 	FbxManager* SdkManager,
 	const char* ActorName,
 	const char* XrayPathSpec,
-	const char* TargetPath)
+	const char* TargetPath,
+	FbxStalkerMotionsExportType ExportType)
 {
 	xray_re::xr_file_system& Filesystem = xray_re::xr_file_system::instance();
 	if (!Filesystem.initialize(XrayPathSpec))
@@ -761,8 +783,16 @@ void FbxStalkerExportActor(
 		return;
 	}
 
-	FbxStalkerExportSkinnedVisuals(Filesystem, Ogf, Scene);
-	FbxStalkerExportMotions(Filesystem, Ogf, Scene);
+	if (ExportType != FbxStalkerMotionsExportType::eExternalMotionsOnly)
+	{
+		FbxStalkerExportSkinnedVisuals(Filesystem, Ogf, Scene);
+	}
+
+	if (ExportType != FbxStalkerMotionsExportType::eWitoutMotions)
+	{
+		FbxStalkerExportMotions(Filesystem, Ogf, Scene, ExportType);
+	}
+
 	FbxStalkerEndExportScene(SdkManager, TargetPath, Scene);
 }
 
@@ -784,9 +814,10 @@ int main()
 #else
 	FbxStalkerExportActor(
 		SdkManager,
-		"monsters\\krovosos\\krovosos",
+		"actors\\hero\\stalker_novice",
 		"D:\\projects\\stalker\\fsgame.ltx",
-		"D:\\Projects\\fbxgame");
+		"D:\\Projects\\fbxgame",
+		FbxStalkerMotionsExportType::eWitoutMotions);
 
 	SdkManager->Destroy();
 #endif
