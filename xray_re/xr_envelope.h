@@ -52,7 +52,12 @@ inline xr_key::xr_key(shape_type _shape, float _time, float _value):
 
 class xr_envelope {
 public:
-			xr_envelope();
+	enum type {
+		ROTATION,
+		TRANSLATION
+	};
+
+				xr_envelope(xr_envelope::type t);
 	virtual		~xr_envelope();
 	void		load_a(xr_reader& r);
 	void		load_1(xr_reader& r);
@@ -70,6 +75,8 @@ public:
 	uint8_t&		post_behaviour();
 	uint8_t			post_behaviour() const;
 
+	void			rebuild();
+
 	enum behaviour {
 		BEH_RESET	= 0,
 		BEH_CONSTANT	= 1,
@@ -83,9 +90,10 @@ protected:
 	xr_key_vec	m_keys;
 	uint8_t		m_behaviour0;
 	uint8_t		m_behaviour1;
+	type		m_type;
 };
 
-inline xr_envelope::xr_envelope(): m_behaviour0(BEH_CONSTANT), m_behaviour1(BEH_CONSTANT) {}
+inline xr_envelope::xr_envelope(xr_envelope::type t): m_behaviour0(BEH_CONSTANT), m_behaviour1(BEH_CONSTANT), m_type(t) {}
 inline const xr_key_vec& xr_envelope::keys() const { return m_keys; }
 inline uint8_t& xr_envelope::pre_behaviour() { return m_behaviour0; }
 inline uint8_t xr_envelope::pre_behaviour() const { return m_behaviour0; }

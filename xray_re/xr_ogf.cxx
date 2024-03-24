@@ -17,9 +17,9 @@ void xr_ogf::bone_motion_io::insert_key(float time, const ogf_key_qr* value)
 	dmatrix xform;
 	xform.rotation(q);
 	dvector3 r;
-	xform.get_xyz_i(r);
-	m_envelopes[4]->insert_key(time, float(r.x));
-	m_envelopes[3]->insert_key(time, float(r.y));
+	xform.get_euler_xyz(r);
+	m_envelopes[3]->insert_key(time, float(r.x));
+	m_envelopes[4]->insert_key(time, float(r.y));
 	m_envelopes[5]->insert_key(time, float(r.z));
 }
 

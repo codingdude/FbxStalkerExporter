@@ -33,8 +33,10 @@ void xr_bone_motion::evaluate(float time, fvector3& t, fvector3& r) const
 
 void xr_bone_motion::create_envelopes()
 {
-	for (uint_fast32_t i = 6; i != 0;)
-		m_envelopes[--i] = new xr_envelope;
+	for (uint_fast32_t i = 0; i < 3; ++i)
+		m_envelopes[i] = new xr_envelope(xr_envelope::TRANSLATION);
+	for (uint_fast32_t i = 3; i < 6; ++i)
+		m_envelopes[i] = new xr_envelope(xr_envelope::ROTATION);
 }
 
 void xr_bone_motion::delete_envelopes()

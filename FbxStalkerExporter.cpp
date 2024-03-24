@@ -419,29 +419,6 @@ void FbxStalkerExportMotion(
 		auto BoneMotion = BoneMotions[BoneId];
 		auto Bone = FbxStalkerGetBone(Skeleton, BoneId);
 
-		FbxSet<float> Timeline;
-		for (int EnvelopeId = 3; EnvelopeId < 6; ++EnvelopeId)
-		{
-			const auto Envelope = BoneMotion->envelopes()[EnvelopeId];
-			for (auto Key : Envelope->keys())
-			{
-				Timeline.Insert(Key->time);
-			}
-		}
-
-		FbxMap<float, FbxDouble3> RotationKeys;
-		for (auto Time = Timeline.Begin(); Time != Timeline.End(); ++Time)
-		{
-			xray_re::fmatrix Xform;
-			xray_re::fvector3 Translation, Rotation;
-			BoneMotion->evaluate(Time->GetValue(), Translation, Rotation);
-			Xform.set_xyz_i(Rotation);
-			Xform.get_euler_xyz(Rotation);
-			RotationKeys.Insert(
-				Time->GetValue(),
-				{ Rotation.x,  Rotation.y, Rotation.z });
-		}
-
 		for (int EnvId = 0; EnvId < 6; ++EnvId)
 		{
 			FbxAnimCurve* Curve;
@@ -465,19 +442,17 @@ void FbxStalkerExportMotion(
 			{
 				Curve = Bone->LclRotation.GetCurve(AnimLayer, Component, true);
 				Curve->KeyModifyBegin();
-				for (auto Key = RotationKeys.Begin(); Key != RotationKeys.End(); ++Key)
+				for (const auto& Key : Envelope->keys())
 				{
-					Time.SetSecondDouble(Key->GetKey());
+					Time.SetSecondDouble(Key->time);
 					int KeyIndex = Curve->KeyAdd(Time);
-					Curve->KeySetValue(KeyIndex, static_cast<float>(Key->GetValue()[EnvId % 3]) * RadToDeg);
+					Curve->KeySetValue(KeyIndex, static_cast<float>(Key->value * RadToDeg));
 					Curve->KeySetInterpolation(KeyIndex, FbxAnimCurveDef::eInterpolationCubic);
 				}
 				Curve->KeyModifyEnd();
 			}
 		}
 	}
-
-	FbxAnimCurveFilterResample().Apply(AnimStack);
 }
 
 void FbxStalkerExportMotions(
@@ -814,10 +789,10 @@ int main()
 #else
 	FbxStalkerExportActor(
 		SdkManager,
-		"actors\\hero\\stalker_novice",
+		"actors\\trader\\trader",
 		"D:\\projects\\stalker\\fsgame.ltx",
 		"D:\\Projects\\fbxgame",
-		FbxStalkerMotionsExportType::eWitoutMotions);
+		FbxStalkerMotionsExportType::eWithExternalMotions);
 
 	SdkManager->Destroy();
 #endif

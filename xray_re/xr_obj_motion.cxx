@@ -16,8 +16,10 @@ xr_obj_motion::~xr_obj_motion()
 
 void xr_obj_motion::create_envelopes()
 {
-	for (uint_fast32_t i = 6; i != 0;)
-		m_envelopes[--i] = new xr_envelope;
+	for (uint_fast32_t i = 0; i < 3; ++i)
+		m_envelopes[i] = new xr_envelope(xr_envelope::TRANSLATION);
+	for (uint_fast32_t i = 3; i < 6; ++i)
+		m_envelopes[i] = new xr_envelope(xr_envelope::ROTATION);
 }
 
 void xr_obj_motion::delete_envelopes()

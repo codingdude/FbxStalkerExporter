@@ -1,4 +1,5 @@
 #include <algorithm>
+#include "xr_envelope.h"
 #include "xr_ogf_v4.h"
 #include "xr_file_system.h"
 #include "xr_utils.h"
@@ -328,6 +329,9 @@ void xr_ogf_v4::bone_motion_io::import(xr_reader& r, uint_fast32_t num_keys)
 		}
 	} else {
 		insert_key(0, r.skip<fvector3>());
+	}
+	for (uint_fast32_t i = 0; i < 6; ++i) {
+		m_envelopes[i]->rebuild();
 	}
 }
 

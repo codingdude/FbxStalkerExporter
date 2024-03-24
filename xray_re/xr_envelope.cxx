@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "xr_envelope.h"
 #include "xr_reader.h"
 #include "xr_writer.h"
@@ -50,98 +51,16 @@ xr_envelope::~xr_envelope()
 
 void xr_envelope::insert_key(xr_key* key)
 {
-	if (m_keys.empty()) {
-		m_keys.push_back(key);
-	} else if (m_keys.size() == 1) {
-		m_keys.insert((key->time < m_keys.front()->time) ? m_keys.begin() : m_keys.end(), key);
-	} else {
-		xr_key* skey = m_keys.front();
-		xr_key* ekey = m_keys.back();
-
-		xr_key_vec_it it;
-		float time = key->time;
-		if (time < skey->time) {
-			it = m_keys.begin();
-		} else if (ekey->time < time) {
-			it = m_keys.end();
-		} else {
-			for (it = m_keys.begin() + 1; (*it)->time < time; ++it) {}
-			--it;
-		}
-		m_keys.insert(it, key);
-	}
+	m_keys.push_back(key);
 }
 
 void xr_envelope::insert_key(float time, float value)
 {
-	xr_key_vec_it it;
-#if 0
-	it = m_keys.end();
-#else
-	if (m_keys.empty()) {
-		it = m_keys.begin();
-	} else if (m_keys.size() == 1) {
-		xr_key* key = m_keys.front();
-		switch (key->shape) {
-		case xr_key::SHAPE_STEP:
-			if (value == key->value)
-				return;
-			break;
-
-		default:
-			break;
-		}
-		if (time < key->time)
-			it = m_keys.begin();
-		else
-			it = m_keys.end();
-	} else {
-		xr_key* skey = m_keys.front();
-		xr_key* ekey = m_keys.back();
-
-		if (time < skey->time) {
-			switch (skey->shape) {
-			case xr_key::SHAPE_STEP:
-				if (value == skey->value)
-					return;
-				break;
-
-			default:
-				break;
-			}
-			it = m_keys.begin();
-		} else if (ekey->time < time) {
-			switch (ekey->shape) {
-			case xr_key::SHAPE_STEP:
-				if (value == ekey->value)
-					return;
-				break;
-
-			default:
-				break;
-			}
-			it = m_keys.end();
-		} else {
-			for (it = m_keys.begin() + 1; (*it)->time < time; ++it) {}
-			xr_key* key1 = *it;
-			xr_key* key0 = *--it;
-			switch (key1->shape) {
-			case xr_key::SHAPE_STEP:
-				if (value == key0->value)
-					return;
-				break;
-
-			default:
-				break;
-			};
-		}
-	}
-#endif
 	xr_key* key = new xr_key;
 	key->time = time;
 	key->value = value;
 	key->shape = xr_key::SHAPE_STEP;
-	m_keys.insert(it, key);
+	m_keys.push_back(key);
 }
 
 void xr_envelope::load_1(xr_reader& r)
@@ -164,4 +83,74 @@ void xr_envelope::save(xr_writer& w) const
 	w.w_u8(m_behaviour1);
 	w.w_size_u16(m_keys.size());
 	w.w_seq(m_keys, &xr_key::save);
+}
+
+void xr_envelope::rebuild()
+{
+	auto pred = [](const xr_key* lhs, const xr_key* rhs)
+	{
+		return lhs->time < rhs->time;
+	};
+
+	auto is_twisted = [](xr_key_vec::const_iterator prev,
+		xr_key_vec::const_iterator next)
+	{
+		const auto ang0 = (*prev)->value;
+		const auto ang1 = (*next)->value;
+		if (std::fabs(ang0 + ang1) < M_PI / 4) {
+			const auto abs0 = std::fabs(ang0);
+			const auto abs1 = std::fabs(ang1);
+			if (M_PI - abs0 < M_PI / 4
+				&& M_PI - abs1 < M_PI / 4) {
+				return true;
+			}
+		}
+		return false;
+	};
+
+	auto is_mirrored = [](xr_key_vec::const_iterator prev,
+		xr_key_vec::const_iterator next)
+	{
+		const auto ang0 = (*prev)->value;
+		const auto ang1 = (*next)->value;
+		if (std::abs(std::fabs(ang0) - M_PI) <= DBL_EPSILON) {
+			if (std::signbit(ang0) != std::signbit(ang1)) {
+				return true;
+			}
+		}
+		return false;
+	};
+
+	auto reverse_keys = [](xr_key_vec::iterator begin,
+		xr_key_vec::iterator end)
+	{
+		for (auto it = begin; it != end; ++it) {
+			if (std::signbit((*it)->value)) {
+				(*it)->value += static_cast<float>(M_PI * 2);
+			}
+			else {
+				(*it)->value -= static_cast<float>(M_PI * 2);
+			}
+		}
+	};
+
+	auto fix_mirrored = [](xr_key_vec::const_iterator it)
+	{
+		(*it)->value *= -1.f;
+	};
+
+	std::stable_sort(m_keys.begin(), m_keys.end(), pred);
+
+	if (m_type == ROTATION) {
+		auto prev = m_keys.begin();
+		for (auto it = prev; it != m_keys.end(); ++it) {
+			if (is_mirrored(prev, it)) {
+				fix_mirrored(prev);
+			}
+			if (is_twisted(prev, it)) {
+				reverse_keys(it, m_keys.end());
+			}
+			prev = it;
+		}
+	}
 }
