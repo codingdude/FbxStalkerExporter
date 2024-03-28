@@ -108,17 +108,30 @@ void xr_envelope::rebuild()
 		return false;
 	};
 
-	auto is_mirrored = [](xr_key_vec::const_iterator prev,
-		xr_key_vec::const_iterator next)
+	auto fix_mirrored = [](xr_key_vec::iterator prev,
+		xr_key_vec::iterator next)
 	{
 		const auto ang0 = (*prev)->value;
 		const auto ang1 = (*next)->value;
-		if (std::abs(std::fabs(ang0) - M_PI) <= DBL_EPSILON) {
+		const auto abs0 = std::fabs(ang0);
+		const auto abs1 = std::fabs(ang1);
+
+		if (abs0 == 0 || abs1 == 0) {
+			return;
+		}
+
+		if (std::abs(abs1 - M_PI) <= FLT_EPSILON) {
 			if (std::signbit(ang0) != std::signbit(ang1)) {
-				return true;
+				(*next)->value *= -1.f;
+				return;
 			}
 		}
-		return false;
+
+		if (std::abs(abs0 - M_PI) <= FLT_EPSILON) {
+			if (std::signbit(ang0) != std::signbit(ang1)) {
+				(*prev)->value *= -1.f;
+			}
+		}
 	};
 
 	auto reverse_keys = [](xr_key_vec::iterator begin,
@@ -134,19 +147,12 @@ void xr_envelope::rebuild()
 		}
 	};
 
-	auto fix_mirrored = [](xr_key_vec::const_iterator it)
-	{
-		(*it)->value *= -1.f;
-	};
-
 	std::stable_sort(m_keys.begin(), m_keys.end(), pred);
 
 	if (m_type == ROTATION) {
 		auto prev = m_keys.begin();
 		for (auto it = prev; it != m_keys.end(); ++it) {
-			if (is_mirrored(prev, it)) {
-				fix_mirrored(prev);
-			}
+			fix_mirrored(prev, it);
 			if (is_twisted(prev, it)) {
 				reverse_keys(it, m_keys.end());
 			}
