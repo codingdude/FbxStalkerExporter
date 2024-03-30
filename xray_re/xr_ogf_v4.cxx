@@ -328,7 +328,7 @@ void xr_ogf_v4::bone_motion_io::import(xr_reader& r, uint_fast32_t num_keys)
 			}
 		}
 	} else {
-		r.skip<fvector3>();
+		insert_key(0, r.skip<fvector3>());
 	}
 	for (uint_fast32_t i = 0; i < 6; ++i) {
 		m_envelopes[i]->rebuild();
